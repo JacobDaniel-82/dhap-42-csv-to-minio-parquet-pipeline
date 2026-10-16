@@ -1,0 +1,21 @@
+# Environment variables and secrets
+.env
+**/.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Airflow logs
+**/logs/
+
+# Virtual environments
+.venv/
+venv/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# VS Code settings
+.vscode/

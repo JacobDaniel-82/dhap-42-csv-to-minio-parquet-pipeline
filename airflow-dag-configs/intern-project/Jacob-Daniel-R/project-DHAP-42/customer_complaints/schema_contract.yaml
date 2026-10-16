@@ -1,0 +1,16 @@
+
+columns:
+  - name: Consumer_complaint
+    type: string
+    nullable: false
+  - name: Product
+    type: string
+    nullable: false
+  - name: Sentiment
+    type: integer
+    nullable: false
+    allowed_values: [0, 1]
+  - name: Priority
+    type: integer
+    nullable: false
+    allowed_values: [0, 1]

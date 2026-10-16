@@ -1,0 +1,14 @@
+owner: Jacob Daniel R
+status: completed
+project: DHAP-42
+dataset: customer_complaints
+description: Local CSV ingestion to partitioned Parquet in MinIO
+source:
+  type: csv
+  path: dags/extraction/sample.csv
+destination:
+  type: minio
+  format: parquet
+  partition_column: Product
+validation:
+  schema_contract: schema_contract.yaml

@@ -1,0 +1,59 @@
+
+name: dhap42
+
+services:
+  minio:
+    image: scnd/minio-mirror:RELEASE.2025-09-07T16-13-09Z
+    container_name: dhap42-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - dhap42_minio_data:/data
+    restart: unless-stopped
+
+  airflow:
+    image: apache/airflow:2.10.5-python3.11
+    container_name: dhap42-airflow
+    depends_on:
+      - minio
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+      AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:?Set AIRFLOW_ADMIN_USERNAME in .env}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      MINIO_BUCKET: customer-complaints
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./manifest.yaml:/opt/airflow/manifest.yaml:ro
+      - ./schema_contract.yaml:/opt/airflow/schema_contract.yaml:ro
+      - dhap42_airflow_data:/opt/airflow
+    command:
+      - bash
+      - -c
+      - >-
+        set -e;
+        pip install --no-cache-dir pandas pyarrow pyyaml boto3;
+        airflow db migrate;
+        if airflow users create --username "$$AIRFLOW_ADMIN_USERNAME" --password "$$AIRFLOW_ADMIN_PASSWORD" --firstname Airflow --lastname Admin --role Admin --email admin@example.com;
+        then echo "Airflow admin user created";
+        else airflow users reset-password --username "$$AIRFLOW_ADMIN_USERNAME" --password "$$AIRFLOW_ADMIN_PASSWORD";
+        fi;
+        airflow scheduler &
+        exec airflow webserver
+    restart: unless-stopped
+
+volumes:
+  dhap42_minio_data:
+  dhap42_airflow_data:
